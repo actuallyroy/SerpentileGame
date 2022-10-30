@@ -1,0 +1,72 @@
+body{
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 8fr 3fr;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+
+}
+
+
+.grid-cont{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+table{
+    border-spacing: 10px;
+}
+
+.point-cont{
+    padding-top: 100px;
+}
+
+
+#point{
+    font-size: larger;
+    font-weight: bolder;
+}
+button{
+    padding: 15px 40px;
+    border-radius: 5px;
+    border: 1px solid gray;
+    margin: 10px 10px;
+    cursor: pointer;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+    transition: all 0.2s;
+}
+
+#foundWord{
+    display: flex;
+}
+
+#foundWords{
+    height: calc(100vh - 130px);
+    overflow-y: scroll;
+}
+
+button:active{
+    box-shadow: none;
+}
+
+td{
+    height: 50px;
+    width: 50px;
+    background-color: rgb(64, 194, 107);
+    text-align: center;
+    cursor: pointer;
+    border-radius: 4px;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+    user-select: none;
+    transition: all 0.2s;
+    font-size: large;
+    color: white;
+
+}
+
+td:hover{
+    transform: scale(1.05);
+}
