@@ -7,7 +7,11 @@ const grid = document.getElementById("grid")
 const foundWordsE = document.getElementById("foundWords");
 
 
-import words from "./words.js"
+// import words from "./words.js"
+import words from "./simple_english_dictionary.js"
+
+
+
 
 
 var allTd = document.querySelectorAll("td")
@@ -58,19 +62,19 @@ window.onmouseup = () => {
         if(checking && word.length > 2 && words[word]){
             points += word.length
             document.getElementById('point').innerHTML = `Points ${points}`
-            document.getElementById("foundWord").innerHTML = `Word:&nbsp;<div style="color: green">${word} + ${word.length}</div>`
+            document.getElementById("foundWord").innerHTML = `<div style="color: green; font-size: 30px; font-weight: bold; width: 1000px; text-align: center">Word:&nbsp;${word} + ${word.length}</div><br><div style="padding: 20px">${words[word]}</div>`
             foundWords.push(word)
             foundWordsE.innerHTML = `<div style="color: green">${word} + ${word.length}</div>` + foundWordsE.innerHTML
         }else{
-            if(word.length != 0){
-                document.getElementById("foundWord").innerHTML = `Word:&nbsp;<div style="color: red">${word}</div>`
+            if(word.length > 2){
+                document.getElementById("foundWord").innerHTML = `<div style="color: red; font-size: larger; font-weight: bold;">Word:&nbsp; ${word}</div>`
                 foundWordsE.innerHTML = `<div style="color: red">${word}</div>` + foundWordsE.innerHTML
                 document.getElementById('point').innerHTML = `Points ${points}`
             }
         }
     }else{
         document.getElementById('point').innerHTML = `Points ${points}`
-        document.getElementById("foundWord").innerHTML = `<div style="color: gold">${word} already found</div>`
+        document.getElementById("foundWord").innerHTML = `<div style="color: gold; font-size: larger; font-weight: bold;">${word} already found</div>`
         foundWordsE.innerHTML = `<div style="color: gold">${word} already found</div>` + foundWordsE.innerHTML
     }
     word = ""
@@ -113,7 +117,7 @@ function drawTable(m){
     for(let i = 0; i < m; i++){
         grid.innerHTML += "<tr></tr>"
         for(let j = 0; j < m; j++){
-            let temp = String.fromCharCode(Math.round(Math.random()*25 + 65))
+            let temp = getRandomLtr().toUpperCase();
             grid.lastChild.innerHTML += `<td id="${i}${j}"><span style='padding: 10px'>${temp}</span></td>`
         }
     }
@@ -130,5 +134,47 @@ function drawTable(m){
         }
     })
     
+}
+
+
+const alphaFreq = {
+    e: 56,
+    a: 43,
+    r: 38,
+    i: 38,
+    o: 36,
+    t: 35,
+    n: 34,
+    s: 29,
+    l: 27,
+    c: 23,
+    u: 19,
+    d: 17,
+    p: 16,
+    m: 15,
+    h: 15,
+    g: 13,
+    b: 10,
+    f: 9,
+    y: 9,
+    w: 7,
+    k: 6,
+    v: 5,
+    x: 2,
+    z: 1,
+    j: 1,
+    q: 1
+}
+
+function getRandomLtr(){
+    let arr = []
+
+    Object.keys(alphaFreq).forEach(item => {
+        for(var i = 0; i < alphaFreq[item]; i++){
+            arr.push(item)
+        }
+    })
+
+    return arr[Math.round(Math.random()*arr.length+1)]
 }
 

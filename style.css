@@ -17,7 +17,7 @@ body{
 }
 
 table{
-    border-spacing: 10px;
+    border-spacing: 7px;
 }
 
 .point-cont{
@@ -41,10 +41,13 @@ button{
 
 #foundWord{
     display: flex;
+    height: 50px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
 #foundWords{
-    height: calc(100vh - 130px);
+    height: calc(100vh - 230px);
     overflow-y: scroll;
 }
 
