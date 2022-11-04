@@ -174,7 +174,7 @@ function getRandomLtr(){
             arr.push(item)
         }
     })
-
-    return arr[Math.round(Math.random()*arr.length+1)]
+    let n = Math.round(Math.random()*(arr.length-1))
+    return arr[n]
 }
 
