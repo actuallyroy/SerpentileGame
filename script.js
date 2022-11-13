@@ -5,10 +5,103 @@ const x8 = document.getElementById("x8");
 const x9 = document.getElementById("x9");
 const grid = document.getElementById("grid")
 const foundWordsE = document.getElementById("foundWords");
+const foundWordTxt = document.getElementById("foundWordTxt")
+const meaningTxt = document.getElementById("meaningTxt");
+
 
 
 // import words from "./words.js"
 import words from "./simple_english_dictionary.js"
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.13.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/9.13.0/firebase-database.js";
+
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCb-TCCOXnPtBU0PpQwU7RJrgjxK9BeMng",
+    authDomain: "teacher-mignon.firebaseapp.com",
+    databaseURL: "https://teacher-mignon-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "teacher-mignon",
+    storageBucket: "teacher-mignon.appspot.com",
+    messagingSenderId: "980519638773",
+    appId: "1:980519638773:web:5a89b64e00157f851457bc",
+    measurementId: "G-N4BBN6VPBF"
+  };
+
+const app = initializeApp(firebaseConfig);
+
+const db = getDatabase();
+
+
+let roomNum = localStorage.getItem("roomNum")
+if(!roomNum){
+    roomNum = (Math.floor(Math.random() * (10000 - 1000 + 1)) + 1000)
+    localStorage.setItem("roomNum", roomNum)
+}
+
+
+
+
+
+const urlParams = new URLSearchParams(window.location.search);
+
+if(urlParams.get("name")){
+    localStorage.setItem("name", urlParams.get("name"))
+}
+
+let name = localStorage.getItem("name")
+let oplayerName = "";
+
+document.getElementById("myID").innerHTML = `${name || "My room No.:"}#${roomNum}`
+
+let connectedWithFriend = false
+
+
+let currentRoom = roomNum
+
+if(urlParams.get('r'))
+    get(ref(db, 'rooms/' + urlParams.get('r')))
+    .then((snapshot) => {
+        if(snapshot.exists()){
+            connectedWithFriend = true
+            currentRoom = urlParams.get("r")
+            update(ref(db, 'rooms/' + currentRoom), {
+                oplayer: {
+                    name: name,
+                    roomNum: roomNum
+                }
+            })
+            onValue(ref(db, 'rooms/' + currentRoom + "/letters"), (snapshot) => {
+                if(snapshot.exists()){
+                    drawTable(Math.sqrt(snapshot.val().length), snapshot.val())
+                }
+            })
+        }else{
+            window.location.href = "join.html?e=nf"
+        }
+    })
+    .catch(error => console.log(error))
+else{
+    update(ref(db, 'rooms/' + currentRoom), {
+        name: name,
+        oplayer: null
+    })
+    onValue(ref(db, 'rooms/' + currentRoom + "/oplayer"), (snapshot) => {
+        if(snapshot.val()){
+            console.log(snapshot.val());
+            connectedWithFriend = true
+            oplayerName = snapshot.val().name
+        }
+    })
+    onValue(ref(db, 'rooms/' + currentRoom + "/letters"), (snapshot) => {
+        if(snapshot.exists()){
+            drawTable(Math.sqrt(snapshot.val().length), snapshot.val())
+        }
+    })
+}
+
+
+
+
 
 
 
@@ -18,7 +111,7 @@ var allTd = document.querySelectorAll("td")
 let wordArr = []
 let word = ""
 
-let foundWords = []
+let foundWords = {}
 
 let points = 0
 
@@ -58,23 +151,32 @@ window.onmouseup = () => {
         }
     }
     word = word.toLowerCase();
-    if(!foundWords.includes(word)){
+    if(!Object.keys(foundWords).includes(word)){
         if(checking && word.length > 2 && words[word]){
+            meaningTxt.innerHTML = ""
             points += word.length
             document.getElementById('point').innerHTML = `Points ${points}`
-            document.getElementById("foundWord").innerHTML = `<div style="color: green; font-size: 30px; font-weight: bold; width: 1000px; text-align: center">Word:&nbsp;${word} + ${word.length}</div><br><div style="padding: 20px">${words[word]}</div>`
-            foundWords.push(word)
+            foundWords[word] = name
             foundWordsE.innerHTML = `<div style="color: green">${word} + ${word.length}</div>` + foundWordsE.innerHTML
-        }else{
-            if(word.length > 2){
-                document.getElementById("foundWord").innerHTML = `<div style="color: red; font-size: larger; font-weight: bold;">Word:&nbsp; ${word}</div>`
-                foundWordsE.innerHTML = `<div style="color: red">${word}</div>` + foundWordsE.innerHTML
-                document.getElementById('point').innerHTML = `Points ${points}`
-            }
+            foundWordTxt.innerHTML = `Word: ${word} + ${word.length}`
+            foundWordTxt.style.color = 'green'
+            fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + word, {method: "GET"})
+            .then(item => item.json())
+            .then(data => {
+                document.getElementById("meaningTxt").innerHTML = data[0].meanings[0].definitions[0].definition
+            })
+        }else if(word.length > 2){
+            meaningTxt.innerHTML = ""
+            foundWordTxt.innerHTML = word
+            foundWordTxt.style.color = 'red'
+            foundWordsE.innerHTML = `<div style="color: red">${word}</div>` + foundWordsE.innerHTML
+            document.getElementById('point').innerHTML = `Points ${points}`
         }
     }else{
+        meaningTxt.innerHTML = ""
         document.getElementById('point').innerHTML = `Points ${points}`
-        document.getElementById("foundWord").innerHTML = `<div style="color: gold; font-size: larger; font-weight: bold;">${word} already found</div>`
+        foundWordTxt.innerHTML = `${word} already found`
+        foundWordTxt.style.color = "gold"
         foundWordsE.innerHTML = `<div style="color: gold">${word} already found</div>` + foundWordsE.innerHTML
     }
     word = ""
@@ -87,38 +189,37 @@ function checkAdjacenty(str1, str2){
 }
 
 x5.onclick = () => {
-    drawTable(5)
+    drawTable(5, gnrtRndmLtrs(5))
 }
 
 
 x6.onclick = () => {
-    drawTable(6)
+    drawTable(6, gnrtRndmLtrs(6))
 }
 
 x7.onclick = () => {
-    drawTable(7)
+    drawTable(7, gnrtRndmLtrs(7))
 }
 
 x8.onclick = () => {
-    drawTable(8)
+    drawTable(8, gnrtRndmLtrs(8))
 }
 
 x9.onclick = () => {
-    drawTable(9)
+    drawTable(9, gnrtRndmLtrs(9))
 }
 
-function drawTable(m){
+function drawTable(m, randomLtrsArr){
     points = 0
-    foundWords = []
+    foundWords = {}
     grid.innerHTML = "";
     foundWordsE.innerHTML = ""
-    document.getElementById("foundWord").innerHTML = "."
+    // let randomLtrsArr = gnrtRndmLtrs(m);
     document.getElementById("point").innerHTML = `Points ${points}`
     for(let i = 0; i < m; i++){
         grid.innerHTML += "<tr></tr>"
         for(let j = 0; j < m; j++){
-            let temp = getRandomLtr().toUpperCase();
-            grid.lastChild.innerHTML += `<td id="${i}${j}"><span style='padding: 10px'>${temp}</span></td>`
+            grid.lastChild.innerHTML += `<td id="${i}${j}"><span style='padding: 10px'>${randomLtrsArr[i*m+j].toUpperCase()}</span></td>`
         }
     }
 
@@ -137,37 +238,48 @@ function drawTable(m){
 }
 
 
-const alphaFreq = {
-    e: 56,
-    a: 43,
-    r: 38,
-    i: 38,
-    o: 36,
-    t: 35,
-    n: 34,
-    s: 29,
-    l: 27,
-    c: 23,
-    u: 19,
-    d: 17,
-    p: 16,
-    m: 15,
-    h: 15,
-    g: 13,
-    b: 10,
-    f: 9,
-    y: 9,
-    w: 7,
-    k: 6,
-    v: 5,
-    x: 2,
-    z: 1,
-    j: 1,
-    q: 1
+function gnrtRndmLtrs(m){
+    let result = []
+    for(let i = 0; i < m*m; i++){
+        result.push(getRandomLtr());
+    }
+    update(ref(db, 'rooms/' + currentRoom), {
+        letters: result
+    })
+    return result
 }
+
 
 function getRandomLtr(){
     let arr = []
+    const alphaFreq = {
+        e: 56,
+        a: 43,
+        r: 38,
+        i: 38,
+        o: 36,
+        t: 35,
+        n: 34,
+        s: 29,
+        l: 27,
+        c: 23,
+        u: 19,
+        d: 17,
+        p: 16,
+        m: 15,
+        h: 15,
+        g: 13,
+        b: 10,
+        f: 9,
+        y: 9,
+        w: 7,
+        k: 6,
+        v: 5,
+        x: 2,
+        z: 1,
+        j: 1,
+        q: 1
+    }
 
     Object.keys(alphaFreq).forEach(item => {
         for(var i = 0; i < alphaFreq[item]; i++){
@@ -177,4 +289,3 @@ function getRandomLtr(){
     let n = Math.round(Math.random()*(arr.length-1))
     return arr[n]
 }
-

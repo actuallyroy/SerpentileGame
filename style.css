@@ -6,13 +6,15 @@ body{
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
 
+
 }
 
 
 .grid-cont{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr 1fr 15fr 3fr;
+    justify-items: center;
     align-items: center;
 }
 
@@ -30,20 +32,32 @@ table{
     font-weight: bolder;
 }
 button{
-    padding: 15px 40px;
+    background-color: rgb(115, 115, 115);
+    padding: 12px 40px;
     border-radius: 5px;
-    border: 1px solid gray;
+    border: 1px solid rgb(251, 251, 251);
     margin: 10px 10px;
     cursor: pointer;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+    box-shadow: 2px 2px 0px rgba(255, 255, 255, 0.6);
     transition: all 0.2s;
+    color: white;
+    font-weight: bolder;
+    font-size: large;
 }
 
 #foundWord{
-    display: flex;
-    height: 50px;
-    flex-wrap: wrap;
-    justify-content: center;
+    text-align: center;
+    height: 80%;
+}
+
+#foundWordTxt{
+    font-size: 30px;
+    color: green;
+    font-weight: bold;
+}
+
+#meaningTxt{
+    font-size: larger;
 }
 
 #foundWords{
@@ -58,14 +72,14 @@ button:active{
 td{
     height: 50px;
     width: 50px;
-    background-color: rgb(64, 194, 107);
+    background-color: rgb(98, 98, 98);
     text-align: center;
     cursor: pointer;
     border-radius: 4px;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.784);
     user-select: none;
     transition: all 0.2s;
-    font-size: large;
+    font-size: larger;
     color: white;
 
 }
