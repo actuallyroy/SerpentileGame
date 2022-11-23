@@ -6,7 +6,9 @@ const x9 = document.getElementById("x9");
 const grid = document.getElementById("grid")
 const foundWordsE = document.getElementById("foundWords");
 const foundWordTxt = document.getElementById("foundWordTxt")
-const meaningTxt = document.getElementById("meaningTxt");
+const meaningTxt = document.getElementById("meaningTxt")
+const oNumber = document.getElementById("o-number")
+const oPoint = document.getElementById("o-point")
 
 
 
@@ -54,25 +56,37 @@ let oplayerName = "";
 document.getElementById("myID").innerHTML = `${name || "My room No.:"}#${roomNum}`
 
 let connectedWithFriend = false
-
+let imOplayer = false
 
 let currentRoom = roomNum
 
-if(urlParams.get('r'))
+if(urlParams.get('r')){
+    imOplayer = true
     get(ref(db, 'rooms/' + urlParams.get('r')))
     .then((snapshot) => {
         if(snapshot.exists()){
             connectedWithFriend = true
+            oplayerName = snapshot.val().name
             currentRoom = urlParams.get("r")
             update(ref(db, 'rooms/' + currentRoom), {
                 oplayer: {
                     name: name,
                     roomNum: roomNum
-                }
+                },
+                oPlayerwords: null,
+                mywords: null
             })
+            console.log(snapshot.val())
+            oNumber.innerHTML = `Playing with: ${snapshot.val().name}#${urlParams.get('r')}`
+            oPoint.innerHTML = `${snapshot.val().name}: 0`
             onValue(ref(db, 'rooms/' + currentRoom + "/letters"), (snapshot) => {
                 if(snapshot.exists()){
                     drawTable(Math.sqrt(snapshot.val().length), snapshot.val())
+                }
+            })
+            onValue(ref(db, 'rooms/' + currentRoom + "/oPlayerWords"), (snapshot) => {
+                if(snapshot.exists()){
+                    console.log(snapshot.val())
                 }
             })
         }else{
@@ -80,6 +94,7 @@ if(urlParams.get('r'))
         }
     })
     .catch(error => console.log(error))
+}
 else{
     update(ref(db, 'rooms/' + currentRoom), {
         name: name,
@@ -90,6 +105,8 @@ else{
             console.log(snapshot.val());
             connectedWithFriend = true
             oplayerName = snapshot.val().name
+            oPoint.innerHTML = `${oplayerName}: 0`
+            oNumber.innerHTML = `Playing with: ${oplayerName}#${snapshot.val().roomNum}`
         }
     })
     onValue(ref(db, 'rooms/' + currentRoom + "/letters"), (snapshot) => {
@@ -108,12 +125,15 @@ else{
 
 
 var allTd = document.querySelectorAll("td")
-let wordArr = []
+let ltrsArr = []
 let word = ""
 
 let foundWords = {}
 
+
 let points = 0
+
+let oPlayerPoints = 0
 
 
 let clicked = false
@@ -126,12 +146,12 @@ window.onmousedown = (e) => {
         if(tag == "SPAN"){
             e.target.parentElement.style.background = "green"
             e.target.parentElement.style.boxShadow = "none"
-            wordArr.push(e.target.parentElement.id)
+            ltrsArr.push(e.target.parentElement.id)
             word += e.target.innerHTML
         }else{
             e.target.style.background = "green"
             e.target.style.boxShadow = "none"
-            wordArr.push(e.target.id)
+            ltrsArr.push(e.target.id)
             word += e.target.firstChild.innerHTML
         }
     }
@@ -139,50 +159,97 @@ window.onmousedown = (e) => {
 
 window.onmouseup = () => {
     clicked = false
+    let wordObj = {
+        right: null,
+        wrong: null,
+        already: null
+    }
     allTd.forEach(item => {
         item.removeAttribute("style")
     })
 
     let checking = true
 
-    for(var i = 0; i < wordArr.length-1; i++){
-        if(!checkAdjacenty(wordArr[i], wordArr[i+1])){
+    for(var i = 0; i < ltrsArr.length-1; i++){
+        if(!checkAdjacenty(ltrsArr[i], ltrsArr[i+1])){
             checking = false
         }
     }
     word = word.toLowerCase();
-    if(!Object.keys(foundWords).includes(word)){
-        if(checking && word.length > 2 && words[word]){
-            meaningTxt.innerHTML = ""
+    if(!Object.values(foundWords).includes(word) && word.length > 2){
+        if(checking && words[word]){
             points += word.length
-            document.getElementById('point').innerHTML = `Points ${points}`
-            foundWords[word] = name
-            foundWordsE.innerHTML = `<div style="color: green">${word} + ${word.length}</div>` + foundWordsE.innerHTML
-            foundWordTxt.innerHTML = `Word: ${word} + ${word.length}`
-            foundWordTxt.style.color = 'green'
+            document.getElementById('point').innerHTML = `${name} ${points}`
             fetch("https://api.dictionaryapi.dev/api/v2/entries/en/" + word, {method: "GET"})
             .then(item => item.json())
             .then(data => {
                 document.getElementById("meaningTxt").innerHTML = data[0].meanings[0].definitions[0].definition
             })
-        }else if(word.length > 2){
-            meaningTxt.innerHTML = ""
-            foundWordTxt.innerHTML = word
-            foundWordTxt.style.color = 'red'
-            foundWordsE.innerHTML = `<div style="color: red">${word}</div>` + foundWordsE.innerHTML
-            document.getElementById('point').innerHTML = `Points ${points}`
+            wordObj["right"] = word
+            foundWords[name] = word
+        }else {
+            wordObj["wrong"] = word
         }
-    }else{
-        meaningTxt.innerHTML = ""
-        document.getElementById('point').innerHTML = `Points ${points}`
-        foundWordTxt.innerHTML = `${word} already found`
-        foundWordTxt.style.color = "gold"
-        foundWordsE.innerHTML = `<div style="color: gold">${word} already found</div>` + foundWordsE.innerHTML
+    }else if(word.length > 2){
+        wordObj["already"] = word
     }
-    word = ""
-    wordArr = []
-}
 
+    word = ""
+    ltrsArr = []
+    if(imOplayer){
+        addFoundWordToSideList(wordObj, urlParams.get("name"))
+        update(ref(db, 'rooms/' + currentRoom + "/oPlayerwords"), wordObj)
+    }else{
+        addFoundWordToSideList(wordObj, name)
+        update(ref(db, 'rooms/' + currentRoom + "/mywords"), wordObj)
+    }
+}
+setTimeout(() => {
+    if(imOplayer){
+        console.log(oplayerName)
+        onValue(ref(db, 'rooms/' + currentRoom + "/mywords"), (snapshot) => {
+            if(snapshot.exists()){
+                console.log(snapshot.val())
+                if(snapshot.val().right){
+                    oPlayerPoints += snapshot.val().right.length
+                    oPoint.innerHTML = `${oplayerName}: ${oPlayerPoints}`
+                }
+                foundWords[oplayerName] = snapshot.val().right || snapshot.val().wrong || snapshot.val().already
+                addFoundWordToSideList(snapshot.val(), oplayerName)
+            }
+        })
+    }
+}, 2000);
+onValue(ref(db, 'rooms/' + currentRoom + "/oPlayerwords"), (snapshot) => {
+    if(snapshot.exists()){
+        console.log(snapshot.val())
+        if(snapshot.val().right){
+            oPlayerPoints += snapshot.val().right.length
+            oPoint.innerHTML = `${oplayerName}: ${oPlayerPoints}`
+        }
+        foundWords[oplayerName] = snapshot.val().right || snapshot.val().wrong || snapshot.val().already
+        addFoundWordToSideList(snapshot.val(), oplayerName)
+    }
+})
+
+
+function addFoundWordToSideList(wordobj, name){
+    meaningTxt.innerHTML = ""
+    foundWordTxt.innerHTML = ""
+    if(wordobj.right){
+        foundWordsE.innerHTML = `<div style="color: green">${name}: ${wordobj.right}</div>` + foundWordsE.innerHTML
+        foundWordTxt.innerHTML = `Word: ${wordobj.right} + ${wordobj.right.length}`
+        foundWordTxt.style.color = 'green'
+    }else if(wordobj.wrong){
+        foundWordsE.innerHTML = `<div style="color: red">${name}: ${wordobj.wrong}</div>` + foundWordsE.innerHTML
+        foundWordTxt.innerHTML = wordobj.wrong
+        foundWordTxt.style.color = 'red'
+    }else if(wordobj.already){
+        foundWordsE.innerHTML = `<div style="color: gold">${name}: ${wordobj.already} already found</div>` + foundWordsE.innerHTML
+        foundWordTxt.innerHTML = `${wordobj.already} already found`
+        foundWordTxt.style.color = "gold"
+    }
+}
 
 function checkAdjacenty(str1, str2){
     return (Math.abs(str2[0] - str1[0]) <= 1 && Math.abs(str2[1] - str1[1]) <= 1)
@@ -211,11 +278,12 @@ x9.onclick = () => {
 
 function drawTable(m, randomLtrsArr){
     points = 0
+    oPlayerPoints = 0
     foundWords = {}
     grid.innerHTML = "";
     foundWordsE.innerHTML = ""
     // let randomLtrsArr = gnrtRndmLtrs(m);
-    document.getElementById("point").innerHTML = `Points ${points}`
+    document.getElementById("point").innerHTML = `${name}: ${points}`
     for(let i = 0; i < m; i++){
         grid.innerHTML += "<tr></tr>"
         for(let j = 0; j < m; j++){
@@ -229,7 +297,7 @@ function drawTable(m, randomLtrsArr){
             if(clicked && item.style.backgroundColor == ""){
                 item.style.background = "green";
                 item.style.boxShadow = "none"
-                wordArr.push(item.id)
+                ltrsArr.push(item.id)
                 word += item.firstChild.innerHTML
             }
         }
