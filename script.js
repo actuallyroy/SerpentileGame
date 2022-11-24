@@ -164,7 +164,7 @@ else{
 
 function startTimer() {
     let d = new Date().getTime();
-    let d1 = new Date(d+10000)
+    let d1 = new Date(d+600000)
     timer.style.color = "red"
     let x = setInterval(function() {
         let now = new Date().getTime();
