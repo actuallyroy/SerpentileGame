@@ -9,6 +9,11 @@ const foundWordTxt = document.getElementById("foundWordTxt")
 const meaningTxt = document.getElementById("meaningTxt")
 const oNumber = document.getElementById("o-number")
 const oPoint = document.getElementById("o-point")
+const timer = document.getElementById("timer")
+const playBtn = document.getElementById("playBtn")
+const popUp = document.getElementById("popup")
+
+
 
 
 
@@ -58,7 +63,13 @@ document.getElementById("myID").innerHTML = `${name || "My room No.:"}#${roomNum
 let connectedWithFriend = false
 let imOplayer = false
 
+let timerIsRunning = false
+
 let currentRoom = roomNum
+
+update(ref(db, 'rooms/' + currentRoom), {
+    play: false
+})
 
 if(urlParams.get('r')){
     imOplayer = true
@@ -89,6 +100,22 @@ if(urlParams.get('r')){
                     console.log(snapshot.val())
                 }
             })
+            onValue(ref(db, 'rooms/' + currentRoom + "/play"), (snapshot) => {
+                if(snapshot.exists()){
+                    if(snapshot.val()){
+                        playBtn.style.display = "none"
+                        timerIsRunning = true
+                        startTimer()
+                        oPlayerPoints = 0
+                        points = 0
+                        foundWords = []
+                        foundWordsE.innerHTML = ""
+                        foundWordTxt.value = ""
+                        meaningTxt.innerHTML = ""
+                    }
+                }
+            })
+
         }else{
             window.location.href = "join.html?e=nf"
         }
@@ -96,6 +123,23 @@ if(urlParams.get('r')){
     .catch(error => console.log(error))
 }
 else{
+
+    playBtn.style.display = "block"
+    playBtn.onclick = () => {
+        if(!timerIsRunning){
+            timerIsRunning = true
+            update(ref(db, 'rooms/' + currentRoom), {play: true})
+            startTimer()
+            oPlayerPoints = 0
+            points = 0
+            foundWordsArr = []
+            foundWordsE.innerHTML = ""  
+            foundWordTxt.innerHTML = ""
+            meaningTxt.innerHTML = ""
+        }
+    }
+
+
     update(ref(db, 'rooms/' + currentRoom), {
         name: name,
         oplayer: null
@@ -118,6 +162,28 @@ else{
 
 
 
+function startTimer() {
+    let d = new Date().getTime();
+    let d1 = new Date(d+10000)
+    timer.style.color = "red"
+    let x = setInterval(function() {
+        let now = new Date().getTime();
+        let distance = d1 - now;
+        let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        timer.innerHTML = (minutes < 10? "0" + minutes : minutes) + ":" + (seconds < 10? "0" + seconds : seconds);
+        if (distance < 0) {
+            clearInterval(x);
+            timerIsRunning = false
+            timer.innerHTML = "00:00";
+            update(ref(db, 'rooms/' + currentRoom), {play: false})
+            popUp.style.display = "flex"
+            document.querySelector("h1").innerHTML = points < oPlayerPoints ? `${oplayerName} won!!! yaay!🎉🎉🎉` : `${name} won!! yaay!🎉🎉🎉`
+        }
+    }, 1000);
+}
+
+
 
 
 
@@ -129,6 +195,8 @@ let ltrsArr = []
 let word = ""
 
 let foundWords = {}
+
+let foundWordsArr = []
 
 
 let points = 0
@@ -176,7 +244,7 @@ window.onmouseup = () => {
         }
     }
     word = word.toLowerCase();
-    if(!Object.values(foundWords).includes(word) && word.length > 2){
+    if(!foundWordsArr.includes(word) && word.length > 2){
         if(checking && words[word]){
             points += word.length
             document.getElementById('point').innerHTML = `${name} ${points}`
@@ -187,13 +255,13 @@ window.onmouseup = () => {
             })
             wordObj["right"] = word
             foundWords[name] = word
+            foundWordsArr.push(word)
         }else {
             wordObj["wrong"] = word
         }
     }else if(word.length > 2){
         wordObj["already"] = word
     }
-
     word = ""
     ltrsArr = []
     if(imOplayer){
@@ -213,6 +281,7 @@ setTimeout(() => {
                 if(snapshot.val().right){
                     oPlayerPoints += snapshot.val().right.length
                     oPoint.innerHTML = `${oplayerName}: ${oPlayerPoints}`
+                    foundWordsArr.push(snapshot.val().right)
                 }
                 foundWords[oplayerName] = snapshot.val().right || snapshot.val().wrong || snapshot.val().already
                 addFoundWordToSideList(snapshot.val(), oplayerName)
@@ -226,6 +295,7 @@ onValue(ref(db, 'rooms/' + currentRoom + "/oPlayerwords"), (snapshot) => {
         if(snapshot.val().right){
             oPlayerPoints += snapshot.val().right.length
             oPoint.innerHTML = `${oplayerName}: ${oPlayerPoints}`
+            foundWordsArr.push(snapshot.val().right)
         }
         foundWords[oplayerName] = snapshot.val().right || snapshot.val().wrong || snapshot.val().already
         addFoundWordToSideList(snapshot.val(), oplayerName)
