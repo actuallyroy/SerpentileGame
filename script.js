@@ -104,6 +104,7 @@ if(urlParams.get('r')){
                 if(snapshot.exists()){
                     if(snapshot.val()){
                         playBtn.style.display = "none"
+                        document.getElementById("n-btns").style.visibility = 'hidden'
                         timerIsRunning = true
                         startTimer()
                         oPlayerPoints = 0
